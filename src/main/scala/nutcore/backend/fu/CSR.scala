@@ -191,7 +191,7 @@ class CSRIO extends FunctionUnitIO {
 class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
   val io = IO(new CSRIO)
 
-  val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
+  val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func) // 这里只是纯粹为了改名
   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
     this.valid := valid
     this.src1 := src1
