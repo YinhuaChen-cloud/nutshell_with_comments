@@ -69,14 +69,14 @@ class AXI4LiteBundleA extends Bundle {
 }
 
 class AXI4LiteBundleW(override val dataBits: Int = AXI4Parameters.dataBits) extends Bundle with AXI4HasData {
-  val strb = Output(UInt((dataBits/8).W))
+  val strb = Output(UInt((dataBits/8).W)) // dataBits 为 XLEN, 即64， 所以这里 strb 的长度是8 bits
 }
 
 class AXI4LiteBundleB extends Bundle {
   val resp = Output(UInt(AXI4Parameters.respBits.W))
 }
 
-class AXI4LiteBundleR(override val dataBits: Int = AXI4Parameters.dataBits) extends AXI4LiteBundleB with AXI4HasData
+class AXI4LiteBundleR(override val dataBits: Int = AXI4Parameters.dataBits) extends AXI4LiteBundleB with AXI4HasData // 不明白为什么读通道要resp
 
 
 class AXI4Lite extends Bundle {

@@ -23,21 +23,25 @@ import nutcore.HasNutCoreParameter
 import bus.axi4._
 import utils._
 
-abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _extra: B = null)
+// 这里的中括号用于指定泛型类型参数。泛型类型参数是一种在类或方法定义中使用的占位符类型，它们可以让你在使用类或方法时指定具体的类型。
+// [T <: AXI4Lite] 表示 T是AXI4Lite类型、或其子类型
+// [B <: AXI4Lite] 表示 T是Data类型、或其子类型
+abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _extra: B = null) // 默认第一个参数是一个AXI4 Bundle, 第二个参数是 null
   extends Module with HasNutCoreParameter {
   val io = IO(new Bundle{
-    val in = Flipped(_type)
-    val extra = if (_extra != null) Some(Flipped(Flipped(_extra))) else None
+    val in = Flipped(_type) // AXI4 和 AXI4Lite 默认是用在主模块上的，这里我们要设计 Slave 端，所以要 Flipped
+    val extra = if (_extra != null) Some(Flipped(Flipped(_extra))) else None // extra 似乎是用来作为 AXI4 总线的补充，由于要跟外面对接，所以也要 Flipped
+    // 在Chisel中，Some类型常常用于描述需要在运行时确定的类型。 常用的方法为 getOrElse(xxx)，当Some类型中没有所需的内容时，返回xxx
   })
-  val in = io.in
+  val in = io.in // 给 io.in 起个别名叫 in      AXI4类型Bundle
 
-  val fullMask = MaskExpand(in.w.bits.strb)
-  def genWdata(originData: UInt) = (originData & ~fullMask) | (in.w.bits.data & fullMask)
+  val fullMask = MaskExpand(in.w.bits.strb) // 从小 strb 获取 fullMask
+  def genWdata(originData: UInt) = (originData & ~fullMask) | (in.w.bits.data & fullMask) // 参数 originData 用来表示“原数据”，新数据在和掩码做"与"处理后，要和元数据做“或”运算
 
-  val raddr = Wire(UInt())
-  val ren = Wire(Bool())
-  val (readBeatCnt, rLast) = in match {
-    case axi4: AXI4 =>
+  val raddr = Wire(UInt()) // 读地址
+  val ren = Wire(Bool()) // 读使能
+  val (readBeatCnt, rLast) = in match { // 这是一个模式匹配语句
+    case axi4: AXI4 => // 如果 in 是 AXI4 类型
       val c = Counter(256)
       val beatCnt = Counter(256)
       val len = HoldUnless(axi4.ar.bits.len, axi4.ar.fire())
@@ -62,12 +66,13 @@ abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _e
       }
       (beatCnt.value, axi4.r.bits.last)
 
-    case axi4lite: AXI4Lite =>
-      raddr := axi4lite.ar.bits.addr
-      (0.U, true.B)
+    case axi4lite: AXI4Lite => // 如果 in 是一个 AXI4Lite 类型
+      raddr := axi4lite.ar.bits.addr // 那么 raddr(读地址) 就是 in.ar.bits.addr
+      (0.U, true.B) // readBeatCnt 为 0， rLast 为 true.B          readBeatCnt 似乎是一个只在AXI4下用的东西     RLAST ：标记最后一次读数据传输
   }
 
-  val r_busy = BoolStopWatch(in.ar.fire(), in.r.fire() && rLast, startHighPriority = true)
+  // 读忙碌，猜测：用来表示读通道在忙？
+  val r_busy = BoolStopWatch(in.ar.fire(), in.r.fire() && rLast, startHighPriority = true) 
   in.ar.ready := in.r.ready || !r_busy
   in.r.bits.resp := AXI4Parameters.RESP_OKAY
   ren := RegNext(in.ar.fire(), init=false.B) || (in.r.fire() && !rLast)

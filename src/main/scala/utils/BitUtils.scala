@@ -23,14 +23,17 @@ object WordShift {
   def apply(data: UInt, wordIndex: UInt, step: Int) = (data << (wordIndex * step.U))
 }
 
+// map函数中，参数为 _ 是什么意思？ 回答：通常用来表示对输入集合中每个元素的操作
 object MaskExpand {
- def apply(m: UInt) = Cat(m.asBools.map(Fill(8, _)).reverse)
+  // 假如 m 为 0x0f, 则 m.asBools = Vec(4x false, 4x true), m.asBools.map(Fill(8, _)) = Vec(8个0， 8个0, ..., 8个1， 8个1)。 加上reverse = Vec(8个1， 8个1, ..., 8个0， 8个0)
+  def apply(m: UInt) = Cat(m.asBools.map(Fill(8, _)).reverse) 
+  // 注意，这里 reverse 的原因是: 在调用 asBools 之后， UInt 会转成一个数组， 数组下标 0~size 是从左到右，与 UInt 的下标从右到左正好相反。因此，最后需要调用 reverse 翻转整个 bit 串
 }
 
 object MaskData {
- def apply(oldData: UInt, newData: UInt, fullmask: UInt) = {
-   (newData & fullmask) | (oldData & ~fullmask)
- }
+  def apply(oldData: UInt, newData: UInt, fullmask: UInt) = {
+    (newData & fullmask) | (oldData & ~fullmask)
+  }
 }
 
 object SignExt {

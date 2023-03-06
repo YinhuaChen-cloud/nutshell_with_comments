@@ -29,6 +29,8 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
     val isWFI = Output(Bool()) // require NutCoreSim to advance mtime when wfi to reduce the idle time in Linux
   })
 
+    // CSRRW          -> List(InstrI, FuType.csr, CSROpType.wrt),
+
   val hasIntr = Wire(Bool())
   val instr = io.in.bits.instr
   val decodeList = ListLookup(instr, Instructions.DecodeDefault, Instructions.DecodeTable)

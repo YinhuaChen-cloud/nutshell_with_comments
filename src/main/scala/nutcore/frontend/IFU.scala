@@ -305,6 +305,7 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
   BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }
 
+// 顺序取指
 class IFU_inorder extends NutCoreModule with HasResetVector {
   val io = IO(new Bundle {
 
