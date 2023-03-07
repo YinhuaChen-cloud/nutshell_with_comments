@@ -76,17 +76,16 @@ class AXI4LiteBundleB extends Bundle {
   val resp = Output(UInt(AXI4Parameters.respBits.W))
 }
 
-class AXI4LiteBundleR(override val dataBits: Int = AXI4Parameters.dataBits) extends AXI4LiteBundleB with AXI4HasData // 不明白为什么读通道要resp
+class AXI4LiteBundleR(override val dataBits: Int = AXI4Parameters.dataBits) extends AXI4LiteBundleB with AXI4HasData // TODO：resp和 data都是Output?
 
 
-class AXI4Lite extends Bundle {
+class AXI4Lite extends Bundle { // AXI4Lite 和 AXI4，在这个文件下的定义，本身是作为 Master 模块的接口
   val aw = Decoupled(new AXI4LiteBundleA)
   val w  = Decoupled(new AXI4LiteBundleW)
   val b  = Flipped(Decoupled(new AXI4LiteBundleB))
   val ar = Decoupled(new AXI4LiteBundleA)
   val r  = Flipped(Decoupled(new AXI4LiteBundleR))
 }
-
 
 // AXI4-full
 

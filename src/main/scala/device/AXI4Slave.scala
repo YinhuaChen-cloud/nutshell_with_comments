@@ -35,11 +35,12 @@ abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _e
   })
   val in = io.in // 给 io.in 起个别名叫 in      AXI4类型Bundle
 
-  val fullMask = MaskExpand(in.w.bits.strb) // 从小 strb 获取 fullMask
-  def genWdata(originData: UInt) = (originData & ~fullMask) | (in.w.bits.data & fullMask) // 参数 originData 用来表示“原数据”，新数据在和掩码做"与"处理后，要和元数据做“或”运算
+  val fullMask = MaskExpand(in.w.bits.strb) // 从小 strb 获取 fullMask // 属于 Write 信号
+  def genWdata(originData: UInt) = (originData & ~fullMask) | (in.w.bits.data & fullMask) // 参数 originData 用来表示“原数据”，新数据在和掩码做"与"处理后，要和元数据做“或”运算 // 属于 write 功能信号
 
   val raddr = Wire(UInt()) // 读地址
   val ren = Wire(Bool()) // 读使能
+  // rLast 信号不属于 AXI4Lite，先不管  ------------------------------- start
   val (readBeatCnt, rLast) = in match { // 这是一个模式匹配语句
     case axi4: AXI4 => // 如果 in 是 AXI4 类型
       val c = Counter(256)
@@ -70,15 +71,16 @@ abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _e
       raddr := axi4lite.ar.bits.addr // 那么 raddr(读地址) 就是 in.ar.bits.addr
       (0.U, true.B) // readBeatCnt 为 0， rLast 为 true.B          readBeatCnt 似乎是一个只在AXI4下用的东西     RLAST ：标记最后一次读数据传输
   }
+  // rLast 信号不属于 AXI4Lite，先不管  ------------------------------- end
 
-  // 读忙碌，猜测：用来表示读通道在忙？
+  // 读忙碌内部信号。当ar.fire(ar.ready和ar.valid为真)，r_busy 在下一周期为真；当 r.fire 且 rLast(表示传输最后一个数据) 都为真，r_busy 在下一周期为假，start信号优先级更高。 // TODO: 这里应该要check 一下
   val r_busy = BoolStopWatch(in.ar.fire(), in.r.fire() && rLast, startHighPriority = true) 
-  in.ar.ready := in.r.ready || !r_busy
-  in.r.bits.resp := AXI4Parameters.RESP_OKAY
-  ren := RegNext(in.ar.fire(), init=false.B) || (in.r.fire() && !rLast)
-  in.r.valid := BoolStopWatch(ren && (in.ar.fire() || r_busy), in.r.fire(), startHighPriority = true)
+  in.ar.ready := in.r.ready || !r_busy // 当 Master的 r.ready 为真，或者 Slave 模块自己的 r_busy 并不忙碌，此时 Slave 模块自己的 ar.ready 为真。 TODO：感觉这里有问题
+  in.r.bits.resp := AXI4Parameters.RESP_OKAY  // 读的 resp 总是为 OKAY // TODO: check
+  ren := RegNext(in.ar.fire(), init=false.B) || (in.r.fire() && !rLast) // 读使能信号连一个寄存器   TODO: checked
+  in.r.valid := BoolStopWatch(ren && (in.ar.fire() || r_busy), in.r.fire(), startHighPriority = true) // 读数据 valid 信号
 
-
+  // 写相关信号，先不管 ------------------------------ start
   val waddr = Wire(UInt())
   val (writeBeatCnt, wLast) = in match {
     case axi4: AXI4 =>
@@ -100,13 +102,14 @@ abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _e
   in. w.ready := in.aw.valid || (w_busy)
   in.b.bits.resp := AXI4Parameters.RESP_OKAY
   in.b.valid := BoolStopWatch(in.w.fire() && wLast, in.b.fire(), startHighPriority = true)
+  // 写相关信号，先不管 ------------------------------ end
 
   in match {
-    case axi4: AXI4 =>
+    case axi4: AXI4 => // 如果是AXI4，做点事情
       axi4.b.bits.id   := RegEnable(axi4.aw.bits.id, axi4.aw.fire())
       axi4.b.bits.user := RegEnable(axi4.aw.bits.user, axi4.aw.fire())
       axi4.r.bits.id   := RegEnable(axi4.ar.bits.id, axi4.ar.fire())
       axi4.r.bits.user := RegEnable(axi4.ar.bits.user, axi4.ar.fire())
-    case axi4lite: AXI4Lite =>
+    case axi4lite: AXI4Lite => // 如果是 AXI4Lite，啥也不做
   }
 }
