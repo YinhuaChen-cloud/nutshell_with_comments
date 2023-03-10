@@ -34,6 +34,13 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   val hasIntr = Wire(Bool())
   val instr = io.in.bits.instr
   val decodeList = ListLookup(instr, Instructions.DecodeDefault, Instructions.DecodeTable)
+  // zip 的作用： a.zip(b) = (a, b)
+  // val DecodeDefault = List(InstrN, FuType.csr, CSROpType.jmp)
+  // 假设 instr 是 addi
+    // ADDI           -> List(InstrI, FuType.alu, ALUOpType.add),
+  // DecodeDefault.zip(decodeList) = List( (InstrN, InstrI),  (FuType.csr, FuType.alu), (CSROpType.jmp, ALUOpType.add) )
+  // 这里的默认译码似乎不是 invalid，而是中断，可能在中断中在判断是否是invalid
+  // 其中，中断的优先级比寻常译码更高
   val instrType :: fuType :: fuOpType :: Nil = // insert Instructions.DecodeDefault when interrupt comes
     Instructions.DecodeDefault.zip(decodeList).map{case (intr, dec) => Mux(hasIntr || io.in.bits.exceptionVec(instrPageFault) || io.out.bits.cf.exceptionVec(instrAccessFault), intr, dec)}
   // val instrType :: fuType :: fuOpType :: Nil = ListLookup(instr, Instructions.DecodeDefault, Instructions.DecodeTable)
@@ -188,6 +195,11 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
 
 }
 
+// case class NutCoreConfig (
+//   FPGAPlatform: Boolean = true,
+//   EnableDebug: Boolean = Settings.get("EnableDebug"),
+//   EnhancedLog: Boolean = true 
+// ) 目前来看：主要是用来配置 debug 模式，是否上板等东西的
 class IDU(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType {
   val io = IO(new Bundle {
     val in = Vec(2, Flipped(Decoupled(new CtrlFlowIO)))

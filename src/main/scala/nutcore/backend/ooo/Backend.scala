@@ -363,6 +363,7 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
   
   val lsuUop = lsurs.io.out.bits
 
+  
   val lsuOut = lsu.access(
     valid = lsurs.io.out.valid,
     src1 = lsuUop.decode.data.src1, 
