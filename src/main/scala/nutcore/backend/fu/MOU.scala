@@ -22,7 +22,7 @@ import chisel3.util.experimental.BoringUtils
 
 import utils._
 
-// memory order unit
+// memory order unit  处理缓存等功能
 object MOUOpType {
   def fence  = "b00".U
   def fencei = "b01".U

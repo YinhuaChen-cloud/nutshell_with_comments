@@ -84,6 +84,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   mou.io.cfIn := io.in.bits.cf
   mou.io.out.ready := true.B
   
+  // io.out.bits.decode(DecodeIO) ------------------------------------ start
   io.out.bits.decode := DontCare
   (io.out.bits.decode.ctrl, io.in.bits.ctrl) match { case (o, i) =>
     o.rfWen := i.rfWen && (!lsuTlbPF && !lsu.io.loadAddrMisaligned && !lsu.io.storeAddrMisaligned || !fuValids(FuType.lsu)) && !(csr.io.wenFix && fuValids(FuType.csr))
@@ -95,6 +96,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   io.out.bits.decode.cf.redirect <>
     Mux(mou.io.redirect.valid, mou.io.redirect,
       Mux(csr.io.redirect.valid, csr.io.redirect, alu.io.redirect))
+  // io.out.bits.decode(DecodeIO) ------------------------------------ end
   
   Debug(mou.io.redirect.valid || csr.io.redirect.valid || alu.io.redirect.valid, "[REDIRECT] mou %x csr %x alu %x \n", mou.io.redirect.valid, csr.io.redirect.valid, alu.io.redirect.valid)
   Debug(mou.io.redirect.valid || csr.io.redirect.valid || alu.io.redirect.valid, "[REDIRECT] flush: %d mou %x csr %x alu %x\n", io.flush, mou.io.redirect.target, csr.io.redirect.target, alu.io.redirect.target)

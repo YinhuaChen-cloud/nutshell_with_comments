@@ -104,7 +104,7 @@ class Frontend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule {
   })
 
   val ifu  = Module(new IFU_inorder)
-  val ibf = Module(new NaiveRVCAlignBuffer)
+  val ibf = Module(new NaiveRVCAlignBuffer) // 这个看起来像是用来支持压缩指令的
   val idu  = Module(new IDU)
 
   def PipelineConnect2[T <: Data](left: DecoupledIO[T], right: DecoupledIO[T],
@@ -124,7 +124,7 @@ class Frontend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule {
   io.ipf <> ifu.io.ipf
   io.imem <> ifu.io.imem
 
-  Debug("------------------------ FRONTEND:------------------------\n")
+  Debug("------------------------ FRONTEND: ------------------------\n")
   Debug("flush = %b, ifu:(%d,%d), idu:(%d,%d)\n",
     ifu.io.flushVec.asUInt, ifu.io.out.valid, ifu.io.out.ready, idu.io.in(0).valid, idu.io.in(0).ready)
   Debug(ifu.io.out.valid, "IFU: pc = 0x%x, instr = 0x%x\n", ifu.io.out.bits.pc, ifu.io.out.bits.instr)

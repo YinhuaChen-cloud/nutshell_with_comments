@@ -47,13 +47,14 @@ object SimpleBusCmd {
 }
 
 class SimpleBusReqBundle(val userBits: Int = 0, val addrBits: Int = 32, val idBits: Int = 0) extends SimpleBusBundle {
-  val addr = Output(UInt(addrBits.W))
-  val size = Output(UInt(3.W))
-  val cmd = Output(SimpleBusCmd())
-  val wmask = Output(UInt((DataBits / 8).W))
-  val wdata = Output(UInt(DataBits.W))
-  val user = if (userBits > 0) Some(Output(UInt(userBits.W))) else None
-  val id = if (idBits > 0) Some(Output(UInt(idBits.W))) else None
+  val addr = Output(UInt(addrBits.W)) // 访存地址（位宽与体系结构实现相关）, 默认 32 位
+  val size = Output(UInt(3.W)) // 访存大小（访存Byte = 2^(req.size)） 默认为 8
+  val cmd = Output(SimpleBusCmd()) // 访存指令, 详见 SimpleBus.scala 中 SimpleBusCmd 的实现
+  val wmask = Output(UInt((DataBits / 8).W))  // 内存写掩码  64/8 = 8 即8个bit, 表示8个字节
+  val wdata = Output(UInt(DataBits.W)) // 内存写数据（位宽与体系结构实现相关）  , 默认 XLEN
+  val user = if (userBits > 0) Some(Output(UInt(userBits.W))) else None // 用户自定义数据, 在访存过程中不被修改
+  val id = if (idBits > 0) Some(Output(UInt(idBits.W))) else None // 标识访存请求的来源, 在访存过程中不被修改
+
 
   override def toPrintable: Printable = {
     p"addr = 0x${Hexadecimal(addr)}, cmd = ${cmd}, size = ${size}, " +

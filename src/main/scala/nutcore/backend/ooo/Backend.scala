@@ -667,9 +667,10 @@ class Backend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule {
   val io = IO(new Bundle {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val flush = Input(UInt(2.W))
-    val dmem = new SimpleBusUC(addrBits = VAddrBits)
+    val dmem = new SimpleBusUC(addrBits = VAddrBits) // 这个应该是用来读写内存
     val memMMU = Flipped(new MemMMUIO)
 
+    // 对 PC 寄存器进行写回，实现跳转指令
     val redirect = new RedirectIO
   })
 
