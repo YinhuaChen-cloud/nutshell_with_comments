@@ -24,6 +24,7 @@ import nutcore.HasNutCoreParameter
 import bus.axi4._
 import utils._
 
+// TODO: 为什么这里不需要写 .v 代码？
 class RAMHelper(memByte: Int) extends BlackBox with HasNutCoreParameter {
   val io = IO(new Bundle {
     val clk = Input(Clock())

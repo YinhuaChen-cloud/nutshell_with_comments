@@ -48,8 +48,11 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
     lsExecUnit.io.instr := DontCare
     io.dtlbPF := lsExecUnit.io.dtlbPF
 
-    val storeReq = valid & LSUOpType.isStore(func)
-    val loadReq  = valid & LSUOpType.isLoad(func)
+    // 判断LSU要做什么
+    // load - store ------------------------------------ start
+    val storeReq = valid & LSUOpType.isStore(func)  // --- 似乎没用到
+    val loadReq  = valid & LSUOpType.isLoad(func) // 没用到
+    // load - store ------------------------------------ end
     val atomReq  = valid & LSUOpType.isAtom(func)
     val amoReq   = valid & LSUOpType.isAMO(func)
     val lrReq   = valid & LSUOpType.isLR(func)
@@ -142,7 +145,7 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
           lsExecUnit.io.out.ready    := io.out.ready 
           lsExecUnit.io.in.bits.src1 := src1 + src2
           lsExecUnit.io.in.bits.src2 := DontCare
-          lsExecUnit.io.in.bits.func := func
+          lsExecUnit.io.in.bits.func := func // 用在这里，推测是被 lsExecUnit 用于判断是 load 还是 store
           lsExecUnit.io.wdata        := io.wdata
           io.in.ready                := lsExecUnit.io.out.fire() || scInvalid
           io.out.valid               := lsExecUnit.io.out.valid  || scInvalid
@@ -160,7 +163,7 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
         lsExecUnit.io.out.ready    := io.out.ready 
         lsExecUnit.io.in.bits.src1 := addr
         lsExecUnit.io.in.bits.src2 := DontCare
-        lsExecUnit.io.in.bits.func := func
+        lsExecUnit.io.in.bits.func := func // 用在这里，推测是被 lsExecUnit 用来判断是 load 还是 store
         lsExecUnit.io.wdata        := io.wdata
         io.in.ready                := lsExecUnit.io.out.fire() 
         io.out.valid               := lsExecUnit.io.out.valid  
@@ -286,6 +289,15 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
     io.storeAddrMisaligned := lsExecUnit.io.storeAddrMisaligned
 }
 
+// class UnpipeLSUIO extends FunctionUnitIO {
+//   val wdata = Input(UInt(XLEN.W))
+//   val instr = Input(UInt(32.W)) // Atom insts need aq rl funct3 bit from instr
+//   val dmem = new SimpleBusUC(addrBits = VAddrBits)
+//   val isMMIO = Output(Bool())
+//   val dtlbPF = Output(Bool()) // TODO: refactor it for new backend
+//   val loadAddrMisaligned = Output(Bool()) // TODO: refactor it for new backend
+//   val storeAddrMisaligned = Output(Bool()) // TODO: refactor it for new backend
+// }
 class LSExecUnit extends NutCoreModule {
   val io = IO(new UnpipeLSUIO)
 
@@ -331,8 +343,8 @@ class LSExecUnit extends NutCoreModule {
 
   val dmem = io.dmem
   val addrLatch = RegNext(addr)
-  val isStore = valid && LSUOpType.isStore(func)
-  val partialLoad = !isStore && (func =/= LSUOpType.ld)
+  val isStore = valid && LSUOpType.isStore(func) // 判断是否是 Store
+  val partialLoad = !isStore && (func =/= LSUOpType.ld) // 如果不是 Store　指令，同时又不是load指令
 
   val s_idle :: s_wait_tlb :: s_wait_resp :: s_partialLoad :: Nil = Enum(4)
   val state = RegInit(s_idle)
@@ -403,7 +415,8 @@ class LSExecUnit extends NutCoreModule {
     "b11".U -> rdataLatch(31, 24)
   ))
   val rdataSel = if (XLEN == 32) rdataSel32 else rdataSel64
-  val rdataPartialLoad = LookupTree(func, List(
+  // 看起来像是已经读取到了数据，要从读到的数据中选择一部分
+  val rdataPartialLoad = LookupTree(func, List( 
       LSUOpType.lb   -> SignExt(rdataSel(7, 0) , XLEN),
       LSUOpType.lh   -> SignExt(rdataSel(15, 0), XLEN),
       LSUOpType.lw   -> SignExt(rdataSel(31, 0), XLEN),
