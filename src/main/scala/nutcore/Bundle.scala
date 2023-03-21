@@ -55,7 +55,7 @@ class MisPredictionRecIO extends NutCoreBundle {
 }
 
 class CtrlFlowIO extends NutCoreBundle {
-  val instr = Output(UInt(64.W))
+  val instr = Output(UInt(64.W)) // TODO: 指令的长度应该是64位
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
   val redirect = new RedirectIO
