@@ -37,6 +37,7 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   val rfSrc2 = io.in(0).bits.ctrl.rfSrc2
   val rfDest1 = io.in(0).bits.ctrl.rfDest
 
+  // TODO: 猜测 isDepend 是用来做数据相关性判断的
   def isDepend(rfSrc: UInt, rfDest: UInt, wen: Bool): Bool = (rfSrc =/= 0.U) && (rfSrc === rfDest) && wen
 
   val forwardRfWen = io.forward.wb.rfWen && io.forward.valid

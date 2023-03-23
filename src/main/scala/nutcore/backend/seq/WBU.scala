@@ -27,6 +27,9 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
     val wb = new WriteBackIO
     val redirect = new RedirectIO
   })
+  // val rfWen = Output(Bool())
+  // val rfDest = Output(UInt(5.W))
+  // val rfData = Output(UInt(XLEN.W))
 
   io.wb.rfWen := io.in.bits.decode.ctrl.rfWen && io.in.valid
   io.wb.rfDest := io.in.bits.decode.ctrl.rfDest
