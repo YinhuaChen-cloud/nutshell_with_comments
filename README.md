@@ -1,5 +1,11 @@
 # NutShell (果壳)
 
+## TODO
+0. 果壳模拟器（前提是复现完nutshell + micro-arch-training）
+1. 架构及文档设计
+2. 将通用模块bpu、mmu、tlb改写讲义
+3. 重构流水线+总线讲义
+
 NutShell is a processor developed by the OSCPU (Open Source Chip Project by University) team.
 
 Currently it supports riscv64/32.
