@@ -53,7 +53,9 @@ class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFilePa
   val src2Forward = src2DependWB && Mux(dontForward1, !src2DependEX, true.B)
 
   val sb = new ScoreBoard
+  // src1Ready: 用来判断操作数1是否准备好
   val src1Ready = !sb.isBusy(rfSrc1) || src1ForwardNextCycle || src1Forward
+  // src1Ready: 用来判断操作数2是否准备好
   val src2Ready = !sb.isBusy(rfSrc2) || src2ForwardNextCycle || src2Forward
   io.out.valid := io.in(0).valid && src1Ready && src2Ready
 

@@ -32,11 +32,15 @@ class RegFile extends HasRegFileParameter with HasNutCoreParameter {
   def write(addr: UInt, data: UInt) = { rf(addr) := data(XLEN-1,0) }
 } 
 
+// 用来处理RAW(写后读)数据冒险
+// 当IDU发现要写入某个寄存器时，把 busy(x) = 1
+// 当WBU完成写入某个寄存器时，把 busy(x) = 0
+// 在IDU阶段，若需要读出寄存器x，而此时 busy(x) = 1，说明发生了RAW
 class ScoreBoard extends HasRegFileParameter {
   val busy = RegInit(0.U(NRReg.W))
-  def isBusy(idx: UInt): Bool = busy(idx)
-  def mask(idx: UInt) = (1.U(NRReg.W) << idx)(NRReg-1, 0)
-  def update(setMask: UInt, clearMask: UInt) = {
+  def isBusy(idx: UInt): Bool = busy(idx) 
+  def mask(idx: UInt) = (1.U(NRReg.W) << idx)(NRReg-1, 0) // TODO: 这个不知道干嘛的
+  def update(setMask: UInt, clearMask: UInt) = { // TODO: 似乎是用来更新 busy 数组的
     // When clearMask(i) and setMask(i) are both set, setMask(i) wins.
     // This can correctly record the busy bit when reg(i) is written
     // and issued at the same cycle.

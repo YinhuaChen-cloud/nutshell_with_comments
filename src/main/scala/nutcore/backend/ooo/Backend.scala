@@ -23,7 +23,7 @@ import chisel3.util.experimental.BoringUtils
 import utils._
 import bus.simplebus._
 
-trait HasBackendConst{
+trait HasBackendConst {
   // val multiIssue = true
   val robSize = 16
   val robWidth = 2
