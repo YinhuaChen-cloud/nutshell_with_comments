@@ -369,7 +369,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
 
   io.imem.req.bits.apply(addr = Cat(pc(VAddrBits-1,1),0.U(1.W)), //cache will treat it as Cat(pc(63,3),0.U(3.W))
     size = "b11".U, cmd = SimpleBusCmd.read, wdata = 0.U, wmask = 0.U, user = Cat(brIdx(3,0), npc(VAddrBits-1, 0), pc(VAddrBits-1, 0)))
-  io.imem.req.valid := io.out.ready
+  io.imem.req.valid := io.out.ready // TODO: 为什么要等 out ready 了才读内存，不能直接读了然后设置ready吗？
   //TODO: add ctrlFlow.exceptionVec
   io.imem.resp.ready := io.out.ready || io.flushVec(0)
 
