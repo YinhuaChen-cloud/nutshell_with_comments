@@ -81,7 +81,7 @@ EMU := $(BUILD_DIR)/emu
 
 $(EMU_MK): $(SIM_TOP_V) | $(EMU_DEPS)
 	@mkdir -p $(@D)
-	verilator --cc --exe $(VERILATOR_FLAGS) \
+	verilator --cc --exe --trace $(VERILATOR_FLAGS) \
 		-o $(abspath $(EMU)) -Mdir $(@D) $^ $(EMU_DEPS)
 
 ifeq ($(USE_READY_TO_RUN_NEMU),true)

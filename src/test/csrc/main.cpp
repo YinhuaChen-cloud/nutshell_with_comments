@@ -68,7 +68,12 @@ std::vector<const char *> Emulator::parse_args(int argc, const char *argv[]) {
   return args; // optimized by rvo
 }
 
+VerilatedContext* contextp;
+
 int main(int argc, const char** argv) {
+
+	contextp = new VerilatedContext;
+
   auto emu = Emulator(argc, argv);
 
   get_sc_time_stamp = [&emu]() -> double {
