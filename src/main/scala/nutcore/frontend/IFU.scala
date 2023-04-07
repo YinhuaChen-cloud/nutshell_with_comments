@@ -326,6 +326,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   val bp1 = Module(new BPU_inorder)
 
   val crosslineJump = bp1.io.crosslineJump
+  /* crosslineJumpLatch 为 ture 表示已经取出跨行的跳转指令，因此下一PC为跳转的地址，所以npcIsSeq = false */
   val crosslineJumpLatch = RegInit(false.B) 
   when(pcUpdate || bp1.io.flush) {
     crosslineJumpLatch := Mux(bp1.io.flush, false.B, crosslineJump && !crosslineJumpLatch)
@@ -335,9 +336,18 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   val crosslineJumpForceTgt = crosslineJumpLatch && !bp1.io.flush
 
   // predicted next pc
+  /* 如果指令跨行，需要取下一行进行拼接，故crosslineJump对应snpc */
   val pnpc = Mux(crosslineJump, snpc, bp1.io.out.target)
   val pbrIdx = bp1.io.brIdx
+  /* next pc ，比较简单的选择逻辑*/
   val npc = Mux(io.redirect.valid, io.redirect.target, Mux(crosslineJumpLatch, crosslineJumpTarget, Mux(bp1.io.out.valid, pnpc, snpc)))
+  /*
+  npcIsSeq:
+  if(io.redirect.valid || crosslineJumpLatch) npcIsSeq = false; /* io.redirect.valid ：来自后端的重定向请求 */
+  else if(crosslineJump) npcIsSeq = true; /*crosslineJump 为true表示指令跨行，需要取下一行拼接，因此 npcIsSeq = true */
+  else if(bp1.io.out.valid) npcIsSeq = false; /* 普通分支预测有效情况 */
+  else  npcIsSeq = true; /* 没有分支发生的情况 */
+  */
   val npcIsSeq = Mux(io.redirect.valid , false.B, Mux(crosslineJumpLatch, false.B, Mux(crosslineJump, true.B, Mux(bp1.io.out.valid, false.B, true.B))))
   // Debug("[NPC] %x %x %x %x %x %x\n",crosslineJumpLatch, crosslineJumpTarget, crosslineJump, bp1.io.out.valid, pnpc, snpc)
 
@@ -370,6 +380,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   io.imem.req.bits.apply(addr = Cat(pc(VAddrBits-1,1),0.U(1.W)), //cache will treat it as Cat(pc(63,3),0.U(3.W))
     size = "b11".U, cmd = SimpleBusCmd.read, wdata = 0.U, wmask = 0.U, user = Cat(brIdx(3,0), npc(VAddrBits-1, 0), pc(VAddrBits-1, 0)))
   io.imem.req.valid := io.out.ready // TODO: 为什么要等 out ready 了才读内存，不能直接读了然后设置ready吗？
+                                    // 因为 ready是输入信号，来自下级流水线(IBF)，只有当IBF就绪时(IFU所取的数据已经被IBF接收)，才能请求访问内存
   //TODO: add ctrlFlow.exceptionVec
   io.imem.resp.ready := io.out.ready || io.flushVec(0)
 

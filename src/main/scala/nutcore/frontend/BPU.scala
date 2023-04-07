@@ -324,6 +324,7 @@ class BPU_inorder extends NutCoreModule {
   // 0 jump rvc         // marked as "take branch" in BTB
   // 2 xxx  rvc <-- pc  // misrecognize this instr as "btb hit" with target of previous jump instr
   // -------------------------------------------------
+  /* 分支指令跨行，需要两次访问Cache才能取出（RVC导致） */
   val crosslineJump = btbRead.brIdx(2) && btbHit
   io.crosslineJump := crosslineJump
   // val crosslineJumpLatch = RegNext(crosslineJump)
@@ -332,6 +333,7 @@ class BPU_inorder extends NutCoreModule {
   Debug(btbHit, "[BTBHT2] btbRead.brIdx %x mask %x\n", btbRead.brIdx, Cat(crosslineJump, Fill(2, io.out.valid)))
   // Debug(btbHit, "[BTBHT5] btbReqValid:%d btbReqSetIdx:%x\n",btb.io.r.req.valid, btb.io.r.req.bits.setId)
   
+  /* 经典2bits PHT */
   // PHT
   val pht = Mem(NRbtb, UInt(2.W))
   val phtTaken = RegEnable(pht.read(btbAddr.getIdx(io.in.pc.bits))(1), io.in.pc.valid)
@@ -372,6 +374,7 @@ class BPU_inorder extends NutCoreModule {
   // SRAM to implement BTB, since write requests have higher priority
   // than read request. Again, since the pipeline will be flushed
   // in the next cycle, the read request will be useless.
+  /* 分支预测失败时，更新BTB */
   btb.io.w.req.valid := req.isMissPredict && req.valid
   btb.io.w.req.bits.setIdx := btbAddr.getIdx(req.pc)
   btb.io.w.req.bits.data := btbWrite
@@ -388,6 +391,7 @@ class BPU_inorder extends NutCoreModule {
 
   val cnt = RegNext(pht.read(btbAddr.getIdx(req.pc)))
   val reqLatch = RegNext(req)
+  /* 当执行分支指令时，更新PHT */
   when (reqLatch.valid && ALUOpType.isBranch(reqLatch.fuOpType)) {
     val taken = reqLatch.actualTaken
     val newCnt = Mux(taken, cnt + 1.U, cnt - 1.U)
@@ -399,6 +403,12 @@ class BPU_inorder extends NutCoreModule {
       //}
     }
   }
+  /* 更新RAS */
+  /*
+    这里RAS溢出的处理有些问题：上溢与下溢处理方式对不上。
+    向上溢出后回到0，但是向下溢出后还是0？
+    要么都允许上下溢出、要么都不允许上下溢出。
+  */
   when (req.valid) {
     when (req.fuOpType === ALUOpType.call)  {
       ras.write(sp.value + 1.U, Mux(req.isRVC, req.pc + 2.U, req.pc + 4.U))
@@ -412,11 +422,12 @@ class BPU_inorder extends NutCoreModule {
       sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U) //TODO: sp.value may less than 0.U
     }
   }
-
+  /* 根据分支类型选择RAS/BTB的预测地址 */
   io.out.target := Mux(btbRead._type === BTBtype.R, rasTarget, btbRead.target)
   // io.out.target := Mux(crosslineJumpLatch && !flush, crosslineJumpTarget, Mux(btbRead._type === BTBtype.R, rasTarget, btbRead.target))
   // io.out.brIdx  := btbRead.brIdx & Fill(3, io.out.valid)
   io.brIdx  := btbRead.brIdx & Cat(true.B, crosslineJump, Fill(2, io.out.valid))
+  /* RAS有效没写 */
   io.out.valid := btbHit && Mux(btbRead._type === BTBtype.B, phtTaken, true.B && rasTarget=/=0.U) //TODO: add rasTarget=/=0.U, need fix
   io.out.rtype := 0.U
   // io.out.valid := btbHit && Mux(btbRead._type === BTBtype.B, phtTaken, true.B) && !crosslineJump || crosslineJumpLatch && !flush && !crosslineJump
