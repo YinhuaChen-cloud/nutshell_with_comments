@@ -348,3 +348,4 @@ fpga/.Xil/
 
 # vscode temp file
 .vscode/
+.metals/

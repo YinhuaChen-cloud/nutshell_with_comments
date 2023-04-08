@@ -41,6 +41,12 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   // DecodeDefault.zip(decodeList) = List( (InstrN, InstrI),  (FuType.csr, FuType.alu), (CSROpType.jmp, ALUOpType.add) )
   // 这里的默认译码似乎不是 invalid，而是中断，可能在中断中在判断是否是invalid
   // 其中，中断的优先级比寻常译码更高
+  /*
+    if(hasIntr || io.in.bits.exceptionVec(instrPageFault) || io.out.bits.cf.exceptionVec(instrAccessFault) )
+      {instrType,fuType,fuOpType} = Instructions.DecodeDefault;
+    else 
+      {instrType,fuType,fuOpType} = decodeList;
+  */
   val instrType :: fuType :: fuOpType :: Nil = // insert Instructions.DecodeDefault when interrupt comes
     Instructions.DecodeDefault.zip(decodeList).map{case (intr, dec) => Mux(hasIntr || io.in.bits.exceptionVec(instrPageFault) || io.out.bits.cf.exceptionVec(instrAccessFault), intr, dec)}
   // val instrType :: fuType :: fuOpType :: Nil = ListLookup(instr, Instructions.DecodeDefault, Instructions.DecodeTable)
@@ -148,20 +154,22 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   io.out.bits.ctrl.src1Type := Mux(instr(6,0) === "b0110111".U, SrcType.reg, src1Type)
   io.out.bits.ctrl.src2Type := src2Type
 
+  /* CSR指令不可推测执行 */
   val NoSpecList = Seq(
     FuType.csr
   )
 
+  /* MOU指令需要阻塞执行 */
   val BlockList = Seq(
     FuType.mou
   )
 
   io.out.bits.ctrl.isNutCoreTrap := (instr(31,0) === NutCoreTrap.TRAP) && io.in.valid
-  io.out.bits.ctrl.noSpecExec := NoSpecList.map(j => io.out.bits.ctrl.fuType === j).reduce(_ || _)
+  io.out.bits.ctrl.noSpecExec := NoSpecList.map(j => io.out.bits.ctrl.fuType === j).reduce(_ || _) /* 将所有NoSpecList的值与fuType对比，并将所有结果 || 成一位信号 */
   io.out.bits.ctrl.isBlocked :=
   (
     io.out.bits.ctrl.fuType === FuType.lsu && LSUOpType.isAtom(io.out.bits.ctrl.fuOpType) ||
-    BlockList.map(j => io.out.bits.ctrl.fuType === j).reduce(_ || _)
+    BlockList.map(j => io.out.bits.ctrl.fuType === j).reduce(_ || _) /* 将所有BlockList的值与fuType对比，并将所有结果 || 成一位信号 */
   )
 
   //output signals

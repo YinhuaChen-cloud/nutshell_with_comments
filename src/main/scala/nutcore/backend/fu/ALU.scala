@@ -97,6 +97,7 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   val shamt = Mux(ALUOpType.isWordOp(func), src2(4, 0), if (XLEN == 64) src2(5, 0) else src2(4, 0))
   // 在这里可以看到 ，res的值仅仅由 func(3,0) 决定，哪怕 BRANCH 指令中的 func(3,0) 和计算指令的 func(3,0) 有重叠
   // TODO: 原因是 BRANCH 指令的结果放到 redirectIO，只需要 IDU 告诉 WBU 译码结果，WBU就能知道选择哪个信号，要写回哪里
+  // 答：因为BRANCH指令译码后，dest寄存器为0，所以EXU不需要处理上述内容
   val res = LookupTreeDefault(func(3, 0), adderRes, List(
     ALUOpType.sll  -> ((shsrc1  << shamt)(XLEN-1, 0)),
     ALUOpType.slt  -> ZeroExt(slt, XLEN),
@@ -111,6 +112,7 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
 
   // ------------------------------- 分界线，上面的计算指令，下面是跳转指令 ---------------------------------------
   // TODO: 为什么 branch 指令的判断可以和 ALU 指令的判断重叠？
+  // 答：因为判断的操作都是一样的，只是判断之后的操作不同（一个到PC一个到RegFile)
   val branchOpTable = List(
     ALUOpType.getBranchType(ALUOpType.beq)  -> !xorRes.orR,  // 	.orR: OR reduction
     ALUOpType.getBranchType(ALUOpType.blt)  -> slt,

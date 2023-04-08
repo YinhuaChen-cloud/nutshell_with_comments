@@ -106,6 +106,13 @@ LOG_LEVEL ?= ALL
 emu: $(EMU)
 	@$(EMU) -i $(IMAGE) $(SEED) -b $(LOG_BEGIN) -e $(LOG_END) -v $(LOG_LEVEL)
 
+# 该版本尚未支持xiangshan-difftest，接入AXI时需要重构
+# emu: sim-verilog
+# 	$(MAKE) -C ./difftest emu
+
+# emu-run: sim-verilog
+# 	$(MAKE) -C ./difftest emu-run
+
 cache:
 	$(MAKE) emu IMAGE=Makefile
 
