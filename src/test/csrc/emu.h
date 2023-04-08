@@ -20,7 +20,13 @@ int first_flag = 0;
 
 class Emulator {
   const char *image;
-  std::shared_ptr<VNutShellSimTop> dut_ptr;
+// ref chapgpt
+// Verilator中使用的dut_ptr建议使用std::unique_ptr，因为DUT对象在仿真结束后需要及时释放，并且不能被多个智能指针同时持有。
+// 使用std::unique_ptr可以保证其所有权唯一，并且在离开作用域时自动释放相关资源，避免内存泄漏和资源浪费。
+// 而使用std::shared_ptr则会导致所有智能指针共享对DUT对象的访问权限，不利于对DUT进行独占式的控制和管理。
+// 此外，由于仿真过程中可能会存在多线程访问同一个DUT对象的情况，因此使用std::shared_ptr也可能会引发线程安全问题。
+// 因此，建议在使用Verilator时，使用std::unique_ptr<VerilatedModule>类型定义dut_ptr，以确保程序运行的稳定性和安全性。
+  std::unique_ptr<VNutShellSimTop> dut_ptr;
 // #if VM_TRACE == 0
   VerilatedVcdC* tfp;
 // #endif
