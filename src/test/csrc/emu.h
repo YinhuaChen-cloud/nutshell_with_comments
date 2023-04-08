@@ -6,24 +6,26 @@
 #include <vector>
 #include "difftest.h"
 
+#define VM_TRACE 0  // 用来关闭波形
+
 //#include "VSimTop__Dpi.h"
 #include "common.h"
 #include "VNutShellSimTop.h"
-// #if VM_TRACE == 0
+#if VM_TRACE
 #include <verilated_vcd_c.h>	// Trace file format header
-// #endif
+#endif
 
-// #if VM_TRACE == 0
+#if VM_TRACE
 int first_flag = 0;
-// #endif
+#endif
 
 
 class Emulator {
   const char *image;
   std::shared_ptr<VNutShellSimTop> dut_ptr;
-// #if VM_TRACE == 0
+#if VM_TRACE
   VerilatedVcdC* tfp;
-// #endif
+#endif
 
   // emu control variable
   uint32_t seed;
@@ -98,31 +100,31 @@ class Emulator {
   
   void single_cycle() {
     extern VerilatedContext* contextp;
-// #if VM_TRACE == 0
+#if VM_TRACE
     if(!first_flag) { // 打印还没有 eval() 时的波形
       tfp->dump(contextp->time());
       tfp->flush();
       first_flag = 1;
     }
-// #endif
+#endif
 
     dut_ptr->clock = 0;
     dut_ptr->eval();
 
-// #if VM_TRACE == 0
+#if VM_TRACE
     contextp->timeInc(1); // necessary for wave gen
     tfp->dump(contextp->time());
     tfp->flush();
-// #endif
+#endif
 
     dut_ptr->clock = 1;
     dut_ptr->eval();
 
-// #if VM_TRACE == 0
+#if VM_TRACE
     contextp->timeInc(1); // necessary for wave gen
     tfp->dump(contextp->time());
     tfp->flush();
-// #endif
+#endif
 
     cycles ++;
 
@@ -138,13 +140,13 @@ class Emulator {
     int hascommit = 0;
     const int stuck_limit = 2000;
 
-// #if VM_TRACE == 0
+#if VM_TRACE
     Verilated::traceEverOn(true);	// Verilator must compute traced signals
     VL_PRINTF("Enabling waves...\n");
     tfp = new VerilatedVcdC;
     dut_ptr->trace(tfp, 99);	// Trace 99 levels of hierarchy
     tfp->open("vlt_dump.vcd");	// Open the dump file
-// #endif
+#endif
 
     while (!is_finish() && n > 0) {
       single_cycle();
@@ -154,9 +156,9 @@ class Emulator {
         eprintf("No instruction commits for %d cycles, maybe get stuck\n"
             "(please also check whether a fence.i instruction requires more than %d cycles to flush the icache)\n",
             stuck_limit, stuck_limit);
-// #if VM_TRACE == 0
+#if VM_TRACE
         tfp->close();
-// #endif
+#endif
         set_abort();
       }
 
@@ -180,9 +182,9 @@ class Emulator {
               dut_ptr->io_difftest_isMMIO, dut_ptr->io_difftest_isRVC, dut_ptr->io_difftest_isRVC2,
               dut_ptr->io_difftest_intrNO, dut_ptr->io_difftest_priviledgeMode, 
               dut_ptr->io_difftest_isMultiCommit)) {
-// #if VM_TRACE == 0
+#if VM_TRACE
             tfp->close();
-// #endif
+#endif
             set_abort();
           }
         }
