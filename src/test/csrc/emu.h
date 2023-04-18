@@ -6,7 +6,7 @@
 #include <vector>
 #include "difftest.h"
 
-#define VM_TRACE 0  // 用来开关波形
+#define VM_TRACE 1  // 用来开关波形
 
 //#include "VSimTop__Dpi.h"
 #include "common.h"

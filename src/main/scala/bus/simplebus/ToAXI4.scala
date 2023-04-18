@@ -141,7 +141,6 @@ class AXI42SimpleBusConverter() extends Module {
   when (axi.r.fire()) { assert(mem.resp.fire() && isState(axi_read)); }
 }
 
-
 class SimpleBus2AXI4Converter[OT <: AXI4Lite](outType: OT, isFromCache: Boolean) extends Module {
   val io = IO(new Bundle {
     val in = Flipped(new SimpleBusUC)
@@ -196,7 +195,7 @@ class SimpleBus2AXI4Converter[OT <: AXI4Lite](outType: OT, isFromCache: Boolean)
 
   axi.r.ready  := mem.resp.ready
   axi.b.ready  := mem.resp.ready
-  mem.resp.valid  := Mux(wen, axi.b.valid, axi.r.valid)
+  mem.resp.valid := Mux(wen, axi.b.valid, axi.r.valid)
 }
 
 object SimpleBus2AXI4Converter {

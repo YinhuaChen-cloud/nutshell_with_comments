@@ -25,7 +25,6 @@ import utils._
 
 // 这里的中括号用于指定泛型类型参数。泛型类型参数是一种在类或方法定义中使用的占位符类型，它们可以让你在使用类或方法时指定具体的类型。
 // [T <: AXI4Lite] 表示 T是AXI4Lite类型、或其子类型
-// [B <: AXI4Lite] 表示 T是Data类型、或其子类型
 abstract class AXI4SlaveModule[T <: AXI4Lite, B <: Data](_type :T = new AXI4, _extra: B = null) // 默认第一个参数是一个AXI4 Bundle, 第二个参数是 null
   extends Module with HasNutCoreParameter {
   val io = IO(new Bundle{
